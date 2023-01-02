@@ -1,6 +1,6 @@
 let players = {
   num: 2,
-  player: null,
+  playerDices: null,
   profiles: [],
 };
 choises = {
@@ -39,6 +39,18 @@ function newGame() {
   makeProfile();
   addAllPlayers();
   addAllButtons();
+}
+function addNewPlayer() {
+  players.num = players.num + 1;
+  while (true) {
+    let h = Math.floor(Math.random() * 8);
+    let s = players.profiles.indexOf(h);
+    if (s < 0) {
+      players.profiles.push(h);
+      break;
+    }
+  }
+  addAllPlayers();
 }
 
 function addAllButtons() {
@@ -106,6 +118,7 @@ function addNewPlayerBox() {
   p.innerText = "Add New AI";
   div2.appendChild(button);
   div2.appendChild(p);
+  div.addEventListener("click", addNewPlayer);
   main.append(div);
 }
 
@@ -122,13 +135,13 @@ function makeProfile() {
   }
 }
 function roll() {
-  players.player = new Array(players.num);
+  players.playerDices = new Array(players.num);
   for (let i = 0; i < players.num; i++) {
     let roll = new Array(6);
     for (let j = 0; j < 6; j++) {
       roll[j] = Math.floor(Math.random() * 6 + 1);
     }
-    players.player[i] = roll;
+    players.playerDices[i] = roll;
   }
 }
 makeFirstPage();
