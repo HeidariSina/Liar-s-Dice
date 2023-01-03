@@ -451,6 +451,8 @@ function changeTurn() {
   }
   makeFirstSection();
   makeSecondSection();
+  let audio = new Audio("./assets/Audio/turn.mp3");
+  audio.play();
   setTimeout(() => play(), 1500);
 }
 
