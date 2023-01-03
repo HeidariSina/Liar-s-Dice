@@ -307,7 +307,7 @@ function makePlayersButton() {
   in1.id = "dice";
   in1.min = 1;
   in1.max = 6;
-  in1.value = 1;
+  in1.value = LastChoises.dice;
   div2.appendChild(in1);
   let div3 = document.createElement("div");
   div3.innerText = "Number: ";
@@ -316,7 +316,7 @@ function makePlayersButton() {
   in2.type = "number";
   in2.name = "num";
   in2.id = "num";
-  in2.value = 1;
+  in2.value = LastChoises.num;
   if (LastChoises.num == 0) in2.min = 1;
   else in2.min = LastChoises.num;
   div3.appendChild(in2);
