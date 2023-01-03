@@ -1,5 +1,6 @@
 let players = {
   num: 2,
+  liveNumber: 2,
   profiles: [],
   playersInfo: [
     {
@@ -56,6 +57,7 @@ function newGame() {
   main.append(div);
   players = {
     num: 2,
+    liveNumber: 2,
     profiles: [],
     playersInfo: [
       {
@@ -93,6 +95,7 @@ function newGame() {
 }
 function addNewPlayer() {
   players.num = players.num + 1;
+  players.liveNumber = players.liveNumber + 1;
   let h;
   while (true) {
     h = Math.floor(Math.random() * 8);
@@ -199,37 +202,44 @@ function roll() {
   players.playerDices = new Array(players.num);
   for (let i = 0; i < players.num; i++) {
     let roll = new Array(5);
-    for (let j = 0; j < 5; j++) {
-      let numm = Math.floor(Math.random() * 6 + 1);
-      roll[j] = numm;
-      switch (numm) {
-        case 1:
-          dices[1] = dices[1] + 1;
-          break;
-        case 2:
-          dices[2] = dices[2] + 1;
-          break;
-        case 3:
-          dices[3] = dices[3] + 1;
-          break;
-        case 4:
-          dices[4] = dices[4] + 1;
-          break;
-        case 5:
-          dices[5] = dices[5] + 1;
-          break;
-        case 6:
-          dices[6] = dices[6] + 1;
-          break;
+    if (players.playersInfo[i].lives > 0) {
+      for (let j = 0; j < 5; j++) {
+        let numm = Math.floor(Math.random() * 6 + 1);
+        roll[j] = numm;
+        switch (numm) {
+          case 1:
+            dices[1] = dices[1] + 1;
+            break;
+          case 2:
+            dices[2] = dices[2] + 1;
+            break;
+          case 3:
+            dices[3] = dices[3] + 1;
+            break;
+          case 4:
+            dices[4] = dices[4] + 1;
+            break;
+          case 5:
+            dices[5] = dices[5] + 1;
+            break;
+          case 6:
+            dices[6] = dices[6] + 1;
+            break;
+        }
       }
+    } else {
+      roll = [0, 0, 0, 0, 0];
     }
     players.playersInfo[i].dice = roll;
   }
-  console.log(players.playersInfo);
-  console.log(dices);
 }
 
 function startGame() {
+  LastChoises = {
+    turn: 0,
+    num: 0,
+    dice: 1,
+  };
   let flag = 1;
   for (let i = 1; i < players.num; i++) {
     if (players.playersInfo[i].lives > 0) {
@@ -245,10 +255,25 @@ function startGame() {
     makeSecondSection();
     setTimeout(() => loser(), 1500);
   } else {
+    for (let i = 0; i < players.num; i++) {
+      players.playersInfo[i].lastBet.dice = 0;
+      players.playersInfo[i].lastBet.num = 0;
+    }
+    dices = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+    };
     roll();
     makeFirstPicker();
     makeFirstSection();
     makeSecondSection();
+    if (LastChoises.turn != 0) {
+      setTimeout(() => play(), 1000);
+    }
   }
 }
 
@@ -282,6 +307,7 @@ function makePlayersButton() {
   in1.id = "dice";
   in1.min = 1;
   in1.max = 6;
+  in1.value = 1;
   div2.appendChild(in1);
   let div3 = document.createElement("div");
   div3.innerText = "Number: ";
@@ -290,17 +316,23 @@ function makePlayersButton() {
   in2.type = "number";
   in2.name = "num";
   in2.id = "num";
+  in2.value = 1;
   if (LastChoises.num == 0) in2.min = 1;
   else in2.min = LastChoises.num;
   div3.appendChild(in2);
   let sButton = document.createElement("button");
   sButton.innerHTML = "Submit";
   sButton.className = "playerButton";
+  sButton.addEventListener("click", playerSubmit);
+  if (LastChoises.turn == 0) sButton.disabled = false;
+  else sButton.disabled = true;
   div.appendChild(sButton);
   let lButton = document.createElement("button");
   lButton.innerHTML = "Lie";
   lButton.className = "playerButton";
-  lButton.addEventListener("click", () => LIE(0, players.num - 1));
+  lButton.addEventListener("click", () => LIE(0));
+  if (LastChoises.turn == 0) lButton.disabled = false;
+  else lButton.disabled = true;
   div.appendChild(lButton);
   let fButton = document.createElement("button");
   fButton.innerHTML = "FOLD";
@@ -353,10 +385,12 @@ function makeCards(index) {
     let p2 = document.createElement("p");
     p2.innerText = "FOLD";
     p2.style = "color: #FF0000";
+    p2.className = "hhh";
     div.appendChild(p2);
   } else if (players.playersInfo[index].lastBet.num == 0) {
     let p2 = document.createElement("p");
     p2.innerText = "Nothing";
+    p2.className = "hhh";
     div.appendChild(p2);
   } else {
     let div2 = document.createElement("div");
@@ -368,8 +402,8 @@ function makeCards(index) {
     div2.appendChild(p2);
 
     let image = document.createElement("img");
-    image.className = "icon";
-    image.src = `/assets/dice/dice${players.playersInfo[index].lastBet.dice}.jpg`;
+    image.className = "diceIcon";
+    image.src = `/assets/dice/dice${players.playersInfo[index].lastBet.dice}.png`;
     div2.appendChild(image);
   }
   main.appendChild(div);
@@ -406,27 +440,319 @@ function makeFirstPicker() {
 }
 
 function changeTurn() {
-  LastChoises.turn = LastChoises.turn + 1;
-  if (LastChoises.turn == players.num) {
-    LastChoises.turn = 0;
+  while (true) {
+    LastChoises.turn = LastChoises.turn + 1;
+    if (LastChoises.turn == players.num) {
+      LastChoises.turn = 0;
+    }
+    if (players.playersInfo[LastChoises.turn].lives > 0) {
+      break;
+    }
+  }
+  makeFirstSection();
+  makeSecondSection();
+  setTimeout(() => play(), 1500);
+}
+
+function play() {
+  if (LastChoises.turn != 0) {
+    let random = Math.random();
+    let botNum;
+    let botDice;
+    if (LastChoises.num >= players.num * 5) {
+      LIE(LastChoises.turn);
+    } else if (LastChoises.num < players.num * 1) {
+      if (random > 0.666) {
+        botNum = 2;
+      } else if (random > 0.333) {
+        botNum = 1;
+      } else {
+        botNum = 0;
+        if (LastChoises.num == 0) {
+          botNum = 1;
+        }
+      }
+      if (botNum == 0) {
+        if (LastChoises.dice == 6) {
+          botNum = 1;
+          botDice = Math.floor(Math.random() * 6 + 1);
+        } else {
+          botDice = makeRandomNumber(LastChoises.dice);
+        }
+      } else {
+        botDice = Math.floor(Math.random() * 6 + 1);
+      }
+      LastChoises.dice = botDice;
+      LastChoises.num = LastChoises.num + botNum;
+      players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+      players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+      changeTurn();
+    } else if (LastChoises.num < players.liveNumber * 1.5) {
+      if (random > 0.85) {
+        botNum = 2;
+      } else if (random > 0.42) {
+        botNum = 1;
+      } else {
+        botNum = 0;
+      }
+      if (botNum == 0) {
+        if (LastChoises.dice == 6) {
+          botNum = 1;
+          botDice = Math.floor(Math.random() * 6 + 1);
+        } else {
+          botDice = makeRandomNumber(LastChoises.dice);
+        }
+      } else {
+        botDice = Math.floor(Math.random() * 6 + 1);
+      }
+      LastChoises.dice = botDice;
+      LastChoises.num = LastChoises.num + botNum;
+      players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+      players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+      changeTurn();
+    } else if (LastChoises.num < players.liveNumber * 1.75) {
+      if (random > 0.05) {
+        if (random > 0.85) {
+          botNum = 2;
+        } else if (random > 0.55) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 2) {
+      if (random > 0.1) {
+        if (random > 0.95) {
+          botNum = 2;
+        } else if (random > 0.55) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 2.5) {
+      if (random > 0.2) {
+        if (random > 0.7) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 2.75) {
+      if (random > 0.35) {
+        if (random > 0.7) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 3) {
+      if (random > 0.5) {
+        if (random > 0.9) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 3.2) {
+      if (random > 0.8) {
+        if (random > 0.95) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else if (LastChoises.num < players.liveNumber * 3.4) {
+      if (random > 0.9) {
+        if (random > 0.98) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    } else {
+      if (random > 0.95) {
+        if (random > 0.995) {
+          botNum = 1;
+        } else {
+          botNum = 0;
+        }
+        if (botNum == 0) {
+          if (LastChoises.dice == 6) {
+            botNum = 1;
+            botDice = Math.floor(Math.random() * 6 + 1);
+          } else {
+            botDice = makeRandomNumber(LastChoises.dice);
+          }
+        } else {
+          botDice = Math.floor(Math.random() * 6 + 1);
+        }
+        LastChoises.dice = botDice;
+        LastChoises.num = LastChoises.num + botNum;
+        players.playersInfo[LastChoises.turn].lastBet.dice = botDice;
+        players.playersInfo[LastChoises.turn].lastBet.num = LastChoises.num;
+        changeTurn();
+      } else {
+        LIE(LastChoises.turn);
+      }
+    }
   }
 }
 
-function LIE(i1, i2) {
-  console.log(LastChoises.num);
-  console.log(dices[LastChoises.dice]);
+function LIE(i1) {
+  let t = i1 - 1;
+  if (i1 == 0) {
+    t = players.num - 1;
+  }
+  while (true) {
+    if (players.playersInfo[t].lives > 0) {
+      break;
+    }
+    t = t - 1;
+  }
+  let temp = t;
+  if (LastChoises.num > dices[LastChoises.dice]) {
+    temp = i1;
+  }
   alert(`
-  ${players.playersInfo[i1].name} LIED ${players.playersInfo[i2].name}
+  ${players.playersInfo[i1].name} LIED ${players.playersInfo[t].name}
+  winner : ${players.playersInfo[temp].name}
   Bet Dice : ${LastChoises.dice}
   Bet Number : ${LastChoises.num}
   Real Number : ${dices[LastChoises.dice]}
   `);
 
-  if (LastChoises.num > dices[LastChoises.dice]) {
-    players.playersInfo[i2].lives -= 1;
+  if (temp == i1) {
+    players.playersInfo[t].lives -= 1;
+    if (players.playersInfo[t].lives == 0)
+      players.liveNumber = players.liveNumber - 1;
   } else {
     players.playersInfo[i1].lives -= 1;
+    if (players.playersInfo[i1].lives == 0)
+      players.liveNumber = players.liveNumber - 1;
   }
+  LastChoises = {
+    turn: 0,
+    num: 0,
+    dice: 1,
+  };
   startGame();
 }
 
@@ -435,11 +761,30 @@ function FOLD() {
     makeFirstPage();
   }
 }
+
+function playerSubmit() {
+  let diceVal = document.querySelector("#dice").value;
+  let numVal = document.querySelector("#num").value;
+  if (diceVal > 6 || diceVal < 1) {
+    alert("Wrong Range Of Dice");
+  } else if (
+    (diceVal <= LastChoises.dice && numVal <= LastChoises.num) ||
+    numVal < LastChoises.num
+  ) {
+    alert("You Picked Incorect Number or Dice");
+  } else {
+    LastChoises.num = parseInt(numVal);
+    LastChoises.dice = parseInt(diceVal);
+    players.playersInfo[0].lastBet.dice = parseInt(diceVal);
+    players.playersInfo[0].lastBet.num = parseInt(numVal);
+    changeTurn();
+  }
+}
 function loser() {
   let main = document.querySelector(".main");
   main.innerHTML = "";
   let div = document.createElement("div");
-  div.className = "lostDiv";
+  div.className = "finalDiv";
   main.appendChild(div);
   let p = document.createElement("p");
   p.className = "lostP";
@@ -470,5 +815,34 @@ function winner() {
   div.appendChild(button);
   let audio = new Audio("./assets/Audio/win.mp3");
   audio.play();
+}
+
+function makeRandomNumber(min) {
+  random = Math.random();
+  if (min == 1) {
+    if (random < 0.2) return 2;
+    else if (random < 0.4) return 3;
+    else if (random < 0.2) return 4;
+    else if (random < 0.8) return 5;
+    else return 6;
+  }
+  if (min == 2) {
+    if (random < 0.25) return 3;
+    else if (random < 0.5) return 4;
+    else if (random < 0.75) return 5;
+    else return 6;
+  }
+  if (min == 3) {
+    if (random < 0.3333) return 4;
+    else if (random < 0.6666) return 5;
+    else return 6;
+  }
+  if (min == 4) {
+    if (random < 0.5) return 5;
+    else return 6;
+  }
+  if (min == 5) {
+    return 6;
+  }
 }
 makeFirstPage();
