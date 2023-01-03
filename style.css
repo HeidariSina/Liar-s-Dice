@@ -219,6 +219,38 @@ input:focus {
   width: 0px;
   height: 0px;
 }
+.finalDiv {
+  width: 100%;
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.lostP {
+  font-size: 5rem;
+  font-style: italic;
+  color: rgb(231, 17, 17);
+}
+.lostButton {
+  color: rgba(231, 17, 17, 0.705);
+  cursor: pointer;
+  font-size: 2rem;
+  border: none;
+  background-color: rgba(0, 0, 0, 0);
+}
+.winP {
+  font-size: 5rem;
+  font-style: italic;
+  color: rgb(9, 255, 0);
+}
+.winButton {
+  color: rgb(0, 156, 8);
+  cursor: pointer;
+  font-size: 2rem;
+  border: none;
+  background-color: rgba(0, 0, 0, 0);
+}
 @media screen and (max-width: 1300px) {
   .box {
     width: 60%;

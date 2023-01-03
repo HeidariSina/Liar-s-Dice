@@ -46,6 +46,14 @@ function makeFirstPage() {
   div.appendChild(h);
   div.appendChild(button);
   main.appendChild(div);
+}
+
+function newGame() {
+  let main = document.querySelector(".main");
+  main.innerHTML = "";
+  let div = document.createElement("div");
+  div.className = "newGameBox";
+  main.append(div);
   players = {
     num: 2,
     profiles: [],
@@ -79,14 +87,6 @@ function makeFirstPage() {
     num: 0,
     dice: 1,
   };
-}
-
-function newGame() {
-  let main = document.querySelector(".main");
-  main.innerHTML = "";
-  let div = document.createElement("div");
-  div.className = "newGameBox";
-  main.append(div);
   makeProfile();
   addAllPlayers();
   addAllButtons();
@@ -198,8 +198,8 @@ function makeProfile() {
 function roll() {
   players.playerDices = new Array(players.num);
   for (let i = 0; i < players.num; i++) {
-    let roll = new Array(6);
-    for (let j = 0; j < 6; j++) {
+    let roll = new Array(5);
+    for (let j = 0; j < 5; j++) {
       let numm = Math.floor(Math.random() * 6 + 1);
       roll[j] = numm;
       switch (numm) {
@@ -230,10 +230,26 @@ function roll() {
 }
 
 function startGame() {
-  roll();
-  makeFirstPicker();
-  makeFirstSection();
-  makeSecondSection();
+  let flag = 1;
+  for (let i = 1; i < players.num; i++) {
+    if (players.playersInfo[i].lives > 0) {
+      flag = 0;
+    }
+  }
+  if (flag == 1) {
+    makeFirstSection();
+    makeSecondSection();
+    setTimeout(() => winner(), 1500);
+  } else if (players.playersInfo[0].lives == 0) {
+    makeFirstSection();
+    makeSecondSection();
+    setTimeout(() => loser(), 1500);
+  } else {
+    roll();
+    makeFirstPicker();
+    makeFirstSection();
+    makeSecondSection();
+  }
 }
 
 function makeFirstSection() {
@@ -284,6 +300,7 @@ function makePlayersButton() {
   let lButton = document.createElement("button");
   lButton.innerHTML = "Lie";
   lButton.className = "playerButton";
+  lButton.addEventListener("click", () => LIE(0, players.num - 1));
   div.appendChild(lButton);
   let fButton = document.createElement("button");
   fButton.innerHTML = "FOLD";
@@ -306,6 +323,9 @@ function makeCards(index) {
   let main = document.querySelector(".playerCards");
   let div = document.createElement("div");
   div.className = "card";
+  if (players.playersInfo[index].lives == 0) {
+    div.style = "border-color : #FF0000; box-shadow: 0px 0px 5px #FF0000";
+  }
   let image = document.createElement("img");
   image.className = "icon";
   image.src = `/assets/profile/${players.playersInfo[index].profileNumber}.jpg`;
@@ -329,7 +349,12 @@ function makeCards(index) {
   let p2 = document.createElement("p");
   p2.innerText = "Last Bet:";
   div.appendChild(p2);
-  if (players.playersInfo[index].lastBet.num == 0) {
+  if (players.playersInfo[index].lives == 0) {
+    let p2 = document.createElement("p");
+    p2.innerText = "FOLD";
+    p2.style = "color: #FF0000";
+    div.appendChild(p2);
+  } else if (players.playersInfo[index].lastBet.num == 0) {
     let p2 = document.createElement("p");
     p2.innerText = "Nothing";
     div.appendChild(p2);
@@ -371,13 +396,79 @@ function makeSecondSection() {
 }
 
 function makeFirstPicker() {
-  let numm = Math.floor(Math.random() * players.num);
-  LastChoises.turn = numm;
+  while (true) {
+    let numm = Math.floor(Math.random() * players.num);
+    LastChoises.turn = numm;
+    if (players.playersInfo[numm].lives > 0) {
+      break;
+    }
+  }
+}
+
+function changeTurn() {
+  LastChoises.turn = LastChoises.turn + 1;
+  if (LastChoises.turn == players.num) {
+    LastChoises.turn = 0;
+  }
+}
+
+function LIE(i1, i2) {
+  console.log(LastChoises.num);
+  console.log(dices[LastChoises.dice]);
+  alert(`
+  ${players.playersInfo[i1].name} LIED ${players.playersInfo[i2].name}
+  Bet Dice : ${LastChoises.dice}
+  Bet Number : ${LastChoises.num}
+  Real Number : ${dices[LastChoises.dice]}
+  `);
+
+  if (LastChoises.num > dices[LastChoises.dice]) {
+    players.playersInfo[i2].lives -= 1;
+  } else {
+    players.playersInfo[i1].lives -= 1;
+  }
+  startGame();
 }
 
 function FOLD() {
   if (confirm("You Want to FOLD?") == true) {
     makeFirstPage();
   }
+}
+function loser() {
+  let main = document.querySelector(".main");
+  main.innerHTML = "";
+  let div = document.createElement("div");
+  div.className = "lostDiv";
+  main.appendChild(div);
+  let p = document.createElement("p");
+  p.className = "lostP";
+  p.innerText = "You Lost!";
+  div.appendChild(p);
+  let button = document.createElement("button");
+  button.className = "lostButton";
+  button.innerText = "Try Again?";
+  button.addEventListener("click", newGame);
+  div.appendChild(button);
+  let audio = new Audio("./assets/Audio/lost.mp3");
+  audio.play();
+}
+function winner() {
+  let main = document.querySelector(".main");
+  main.innerHTML = "";
+  let div = document.createElement("div");
+  div.className = "finalDiv";
+  main.appendChild(div);
+  let p = document.createElement("p");
+  p.className = "winP";
+  p.innerText = "You Win!";
+  div.appendChild(p);
+  let button = document.createElement("button");
+  button.className = "winButton";
+  button.innerText = "Try Again?";
+  button.addEventListener("click", newGame);
+  div.appendChild(button);
+  let audio = new Audio("./assets/Audio/win.mp3");
+  audio.play();
 }
 makeFirstPage();
